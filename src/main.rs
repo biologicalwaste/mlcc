@@ -1,18 +1,38 @@
+use app::App;
+use input::key;
 use std::io::Result;
+use ui::{render, ui_enter, ui_leave};
 
-use ui::{key, ui_start, ui_stop};
-
+mod app;
+mod cue;
+mod input;
 mod ui;
 
 fn main() -> Result<()> {
-    let mut terminal = ui_start()?;
-    let mut should_quit = false;
-    while !should_quit {
-        terminal.hello_world()?;
-        if key('q')? {
-            should_quit = true;
+    let mut terminal = ui_enter()?;
+
+    let mut app = App::new();
+
+    loop {
+        terminal.draw(|f| render(f, app.clone()))?;
+
+        if let Some(key) = key()? {
+            match key {
+                'q' => app.change_state(app::AppState::Quit),
+                'c' => app.change_state(app::AppState::ChangeDisplay),
+                _ => (),
+            }
+        }
+        match app.state {
+            app::AppState::Quit => break,
+            app::AppState::ChangeDisplay => {
+                app.change_display_state();
+                app.change_state(app::AppState::Awaiting);
+            }
+            app::AppState::Awaiting => (),
         }
     }
-    ui_stop()?;
+
+    ui_leave(terminal)?;
     Ok(())
 }
