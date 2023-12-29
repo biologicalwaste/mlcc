@@ -1,10 +1,13 @@
+use tui_input::Input;
+
 #[derive(Clone)]
 pub struct App {
     pub state: AppState,
     pub universe: [u8; 512],
     pub display_state: DisplayState,
     pub table_offset: u8,
-    pub command: String,
+    pub command: Input,
+    pub current_cue: f32,
 }
 
 #[derive(Clone)]
@@ -27,7 +30,8 @@ impl App {
             universe: [255; 512],
             display_state: DisplayState::Universe,
             table_offset: 0,
-            command: String::new(),
+            command: Input::new("".to_string()),
+            current_cue: 0.0,
         }
     }
 
