@@ -5,16 +5,18 @@ pub struct App {
     pub state: AppState,
     pub universe: [u8; 512],
     pub display_state: DisplayState,
-    pub table_offset: u8,
+    pub table_offset: usize,
     pub command: Input,
     pub current_cue: f32,
+    pub frame_time: u128,
 }
 
 #[derive(Clone)]
 pub enum AppState {
     Quit,
     ChangeDisplay,
-    Awaiting,
+    Normal,
+    Input,
 }
 
 #[derive(Clone)]
@@ -26,12 +28,13 @@ pub enum DisplayState {
 impl App {
     pub fn new() -> App {
         App {
-            state: AppState::Awaiting,
+            state: AppState::Normal,
             universe: [255; 512],
             display_state: DisplayState::Universe,
             table_offset: 0,
             command: Input::new("".to_string()),
             current_cue: 0.0,
+            frame_time: 0,
         }
     }
 
@@ -48,5 +51,13 @@ impl App {
 
     pub fn set_channel(&mut self, channel: u8, value: u8) {
         self.universe[usize::from(channel)] = value;
+    }
+
+    pub fn scroll_down(&mut self) {
+        self.table_offset = self.table_offset.saturating_sub(1);
+    }
+
+    pub fn scroll_up(&mut self) {
+        self.table_offset = self.table_offset + 1;
     }
 }

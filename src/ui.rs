@@ -1,24 +1,36 @@
-use std::io::{Result, Stdout};
+use std::{
+    io::{Result, Stdout},
+    ops::Add,
+    time::Instant,
+};
 
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{
+        disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen, SetTitle,
+    },
 };
 
+use itertools::Itertools;
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
-    widgets::{Block, Borders, Paragraph, Wrap},
+    style::{Style, Stylize},
+    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph},
     Frame, Terminal,
 };
 
-use crate::app::{App, DisplayState};
+use crate::app::{App, AppState, DisplayState};
 
 pub fn ui_enter() -> Result<Terminal<CrosstermBackend<Stdout>>> {
     enable_raw_mode()?;
     let mut stdout = std::io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    execute!(
+        stdout,
+        EnterAlternateScreen,
+        SetTitle("Miraculous Lighting Control Console")
+    )?;
     let backend = CrosstermBackend::new(stdout);
     let terminal = Terminal::new(backend)?;
     Ok(terminal)
@@ -36,8 +48,10 @@ pub fn ui_leave(mut terminal: Terminal<CrosstermBackend<Stdout>>) -> Result<()> 
 }
 
 pub fn render(f: &mut Frame, app: App) {
+    let timer = Instant::now();
+
     let outer_layout = Layout::new()
-        .constraints([Constraint::Min(10), Constraint::Length(3)])
+        .constraints([Constraint::Percentage(100), Constraint::Min(3)])
         .direction(Direction::Vertical)
         .margin(1)
         .split(f.size());
@@ -46,20 +60,75 @@ pub fn render(f: &mut Frame, app: App) {
         .direction(Direction::Horizontal)
         .split(outer_layout[0]);
 
-    let table_to_display = match app.display_state {
-        DisplayState::Universe => {
-            let mut universe_to_display = String::new();
-            for channel in app.universe {
-                universe_to_display = universe_to_display + " | " + &channel.to_string();
-            }
-            Paragraph::new(universe_to_display)
-                .wrap(Wrap { trim: true })
-                .block(Block::default().title("Universe").borders(Borders::all()))
-        }
-        DisplayState::Channels => Paragraph::new("Working on it :3")
-            .wrap(Wrap { trim: true })
-            .block(Block::default().title("Channels").borders(Borders::all())),
-    };
+    let mut command_line_title = String::from("Command ");
+    match app.state {
+        AppState::Normal => command_line_title = command_line_title.add("[NORMAL]"),
+        AppState::Input => command_line_title = command_line_title.add("[INPUT]"),
+        _ => command_line_title = command_line_title.add("[]"),
+    }
 
-    f.render_widget(table_to_display, inner_layout[0])
+    f.render_widget(
+        Paragraph::new(app.command.value()).block(
+            Block::default()
+                .title(command_line_title)
+                .borders(Borders::all()),
+        ),
+        outer_layout[1],
+    );
+
+    let channels_block = Block::default()
+        .title("Channels [LIVE]")
+        .borders(Borders::all());
+    let channels_block_area = channels_block.inner(inner_layout[0]);
+
+    let channels_rows = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Min(5); 11])
+        .split(channels_block_area);
+
+    let channels = channels_rows
+        .iter()
+        .flat_map(|&area| {
+            Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Min(9); 21])
+                .split(area)
+                .iter()
+                .copied()
+                .collect_vec()
+        })
+        .collect_vec();
+
+    f.render_widget(channels_block, inner_layout[0]);
+
+    for (mut i, area) in channels.iter().enumerate() {
+        i = i + { app.table_offset * 21 };
+        f.render_widget(
+            Paragraph::new(if let Some(a) = app.universe.get(i) {
+                a.to_string()
+            } else {
+                break;
+            })
+            .alignment(ratatui::layout::Alignment::Center)
+            .block(
+                Block::default()
+                    .title(i.to_string())
+                    .title_style(Style::default().black().on_white())
+                    .borders(Borders::all())
+                    .border_type(BorderType::Rounded),
+            ),
+            *area,
+        )
+    }
+
+    let render_time = timer.elapsed().as_millis();
+
+    f.render_widget(
+        List::new([
+            ListItem::new(render_time.to_string()),
+            ListItem::new(app.frame_time.to_string()),
+        ])
+        .block(Block::default().title("Cue List").borders(Borders::all())),
+        inner_layout[1],
+    );
 }

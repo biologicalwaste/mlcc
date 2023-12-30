@@ -8,5 +8,7 @@ edition = "2021"
 [dependencies]
 comma = "1.0.0"
 crossterm = "0.27.0"
+itertools = "0.12.0"
 ratatui = "0.24.0"
 serde = "1.0.193"
+tui-input = "*"
