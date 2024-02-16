@@ -1,6 +1,6 @@
 use std::{
     io::{Result, Stdout},
-    ops::Add,
+    ops::{Add, AddAssign},
     time::Instant,
 };
 
@@ -86,12 +86,22 @@ pub fn render(f: &mut Frame, app: App) {
         .constraints([Constraint::Min(5); 11])
         .split(channels_block_area);
 
+    let num_columns: usize = { channels_block_area.width / 9 }.into();
+
+    let cols = {
+        let mut cols = Vec::new();
+        for _ in 1..num_columns {
+            cols.push(Constraint::Min(9));
+        }
+        cols
+    };
+
     let channels = channels_rows
         .iter()
         .flat_map(|&area| {
             Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints([Constraint::Min(9); 21])
+                .constraints(cols.clone())
                 .split(area)
                 .iter()
                 .copied()
@@ -102,7 +112,7 @@ pub fn render(f: &mut Frame, app: App) {
     f.render_widget(channels_block, inner_layout[0]);
 
     for (mut i, area) in channels.iter().enumerate() {
-        i = i + { app.table_offset * 21 };
+        i = i.add(app.table_offset * num_columns);
         f.render_widget(
             Paragraph::new(if let Some(a) = app.universe.get(i) {
                 a.to_string()
