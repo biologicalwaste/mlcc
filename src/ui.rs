@@ -90,7 +90,7 @@ pub fn render(f: &mut Frame, app: App) {
 
     let cols = {
         let mut cols = Vec::new();
-        for _ in 1..num_columns {
+        for _ in 1..=num_columns {
             cols.push(Constraint::Min(9));
         }
         cols
