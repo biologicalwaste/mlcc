@@ -1,29 +1,22 @@
-use crossterm::event::{self, Event, KeyCode};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use std::io::Result;
 use tui_input::{backend::crossterm::EventHandler, Input};
 
 use crate::app::App;
 
-pub fn key() -> Result<Option<String>> {
+pub fn key() -> Result<Option<KeyCode>> {
     if event::poll(std::time::Duration::from_millis(0))? {
         if let Event::Key(key) = event::read()? {
-            match key.code {
-                KeyCode::Enter => return Ok(Some("enter".to_string())),
-                KeyCode::Esc => return Ok(Some("esc".to_string())),
-                KeyCode::Char(c) => return Ok(Some(c.to_string())),
-                _ => (),
-            }
+            return Ok(Some(key.code));
         }
     }
     Ok(None)
 }
 
 impl App {
-    pub fn command_input(&mut self) -> Result<()> {
-        if event::poll(std::time::Duration::from_millis(0))? {
-            let event = event::read()?;
-            self.command.handle_event(&event);
-        }
+    pub fn command_input(&mut self, keycode: KeyCode) -> Result<()> {
+        self.command
+            .handle_event(&Event::Key(KeyEvent::new(keycode, KeyModifiers::empty())));
         Ok(())
     }
 }

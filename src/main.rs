@@ -1,6 +1,7 @@
 use app::App;
+use crossterm::event::KeyCode;
 use input::key;
-use std::{io::Result, time::Instant};
+use std::{io::Result, sync::mpsc::channel, thread, time::Instant};
 use ui::{render, ui_enter, ui_leave};
 
 mod app;
@@ -12,6 +13,21 @@ fn main() -> Result<()> {
     let mut terminal = ui_enter()?;
 
     let mut app = App::new();
+    let (app_tx, app_rx) = channel();
+
+    let renderer = thread::spawn(move || -> Result<()> {
+        loop {
+            let app_renderer: App = app_rx.recv().unwrap();
+            terminal.draw(|f| render(f, app_renderer.clone()))?;
+            match &app_renderer.state {
+                app::AppState::Quit => {
+                    ui_leave(terminal)?;
+                    break Ok(());
+                }
+                _ => (),
+            }
+        }
+    });
 
     loop {
         let timer = Instant::now();
@@ -24,20 +40,20 @@ fn main() -> Result<()> {
             }
             app::AppState::Normal => {
                 if let Some(key) = key()? {
-                    match key.as_str() {
-                        "q" => app.change_state(app::AppState::Quit),
-                        "i" => app.change_state(app::AppState::Input),
-                        "j" => app.scroll_up(),
-                        "k" => app.scroll_down(),
+                    match key {
+                        KeyCode::Char('q') => app.change_state(app::AppState::Quit),
+                        KeyCode::Char('i') => app.change_state(app::AppState::Input),
+                        KeyCode::Char('j') => app.scroll_up(),
+                        KeyCode::Char('k') => app.scroll_down(),
                         _ => (),
                     }
                 }
             }
             app::AppState::Input => {
-                app.command_input()?;
                 if let Some(key) = key()? {
-                    if &key == "esc" {
-                        app.change_state(app::AppState::Normal);
+                    match key {
+                        KeyCode::Esc => app.change_state(app::AppState::Normal),
+                        _ => app.command_input(key)?,
                     }
                 }
             }
@@ -45,13 +61,12 @@ fn main() -> Result<()> {
 
         app.frame_time = timer.elapsed().as_millis();
 
-        terminal.draw(|f| render(f, app.clone()))?;
+        app_tx.send(app.clone()).unwrap();
 
         if timer.elapsed().as_millis() < 8 {
             std::thread::sleep(std::time::Duration::from_millis(8) - timer.elapsed());
         }
     }
-
-    ui_leave(terminal)?;
+    let _ = renderer.join();
     Ok(())
 }
