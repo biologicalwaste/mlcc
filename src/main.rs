@@ -1,4 +1,5 @@
 use app::App;
+use command::command_parse;
 use crossterm::event::KeyCode;
 use input::key;
 use std::{io::Result, sync::mpsc::channel, thread, time::Instant};
@@ -55,6 +56,12 @@ fn main() -> Result<()> {
                 if let Some(key) = key()? {
                     match key {
                         KeyCode::Esc => app.change_state(app::AppState::Normal),
+                        KeyCode::Enter => {
+                            if let Some(command) = command_parse(&app.command.to_string()) {
+                                app.print_message(&command.join(" "));
+                                app.clear_command();
+                            }
+                        }
                         _ => app.command_input(key)?,
                     }
                 }

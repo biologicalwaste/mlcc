@@ -61,7 +61,7 @@ pub fn render(f: &mut Frame, app: App) {
         .direction(Direction::Horizontal)
         .split(outer_layout[0]);
     let cues_messages_layout = Layout::new()
-        .constraints([Constraint::Percentage(100), Constraint::Max(10)])
+        .constraints([Constraint::Percentage(50), Constraint::Length(10)])
         .direction(Direction::Vertical)
         .split(inner_layout[1]);
 
@@ -152,7 +152,8 @@ pub fn render(f: &mut Frame, app: App) {
                 .iter()
                 .map(|i| ListItem::new(i.to_string()))
                 .collect_vec(),
-        ),
+        )
+        .block(Block::default().title("Messages").borders(Borders::all())),
         cues_messages_layout[1],
     )
 }
