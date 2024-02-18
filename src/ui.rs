@@ -61,7 +61,7 @@ pub fn render(f: &mut Frame, app: App) {
         .direction(Direction::Horizontal)
         .split(outer_layout[0]);
     let cues_messages_layout = Layout::new()
-        .constraints([Constraint::Percentage(50), Constraint::Length(10)])
+        .constraints([Constraint::Percentage(75), Constraint::Length(10)])
         .direction(Direction::Vertical)
         .split(inner_layout[1]);
 
