@@ -5,6 +5,7 @@ use std::{io::Result, sync::mpsc::channel, thread, time::Instant};
 use ui::{render, ui_enter, ui_leave};
 
 mod app;
+mod command;
 mod cue;
 mod input;
 mod ui;
@@ -45,6 +46,7 @@ fn main() -> Result<()> {
                         KeyCode::Char('i') => app.change_state(app::AppState::Input),
                         KeyCode::Char('j') => app.scroll_up(),
                         KeyCode::Char('k') => app.scroll_down(),
+                        KeyCode::Char('c') => app.clear_command(),
                         _ => (),
                     }
                 }

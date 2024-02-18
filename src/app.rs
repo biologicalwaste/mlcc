@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use tui_input::Input;
 
 #[derive(Clone)]
@@ -7,6 +9,7 @@ pub struct App {
     pub display_state: DisplayState,
     pub table_offset: usize,
     pub command: Input,
+    pub messages: VecDeque<String>,
     pub current_cue: f32,
     pub frame_time: u128,
 }
@@ -33,6 +36,7 @@ impl App {
             display_state: DisplayState::Universe,
             table_offset: 0,
             command: Input::new("".to_string()),
+            messages: VecDeque::new(),
             current_cue: 0.0,
             frame_time: 0,
         }
@@ -59,5 +63,17 @@ impl App {
 
     pub fn scroll_up(&mut self) {
         self.table_offset = self.table_offset + 1;
+    }
+
+    pub fn get_command(&self) -> &str {
+        self.command.value()
+    }
+
+    pub fn clear_command(&mut self) {
+        self.command.reset();
+    }
+
+    pub fn print_message(&mut self, message: &str) {
+        self.messages.push_front(message.to_string());
     }
 }

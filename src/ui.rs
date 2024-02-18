@@ -29,6 +29,7 @@ pub fn ui_enter() -> Result<Terminal<CrosstermBackend<Stdout>>> {
     execute!(
         stdout,
         EnterAlternateScreen,
+        EnableMouseCapture,
         SetTitle("Miraculous Lighting Control Console")
     )?;
     let backend = CrosstermBackend::new(stdout);
@@ -59,6 +60,10 @@ pub fn render(f: &mut Frame, app: App) {
         .constraints([Constraint::Min(10), Constraint::Length(20)])
         .direction(Direction::Horizontal)
         .split(outer_layout[0]);
+    let cues_messages_layout = Layout::new()
+        .constraints([Constraint::Percentage(100), Constraint::Max(10)])
+        .direction(Direction::Vertical)
+        .split(inner_layout[1]);
 
     let mut command_line_title = String::from("Command ");
     match app.state {
@@ -139,6 +144,15 @@ pub fn render(f: &mut Frame, app: App) {
             ListItem::new(app.frame_time.to_string()),
         ])
         .block(Block::default().title("Cue List").borders(Borders::all())),
-        inner_layout[1],
+        cues_messages_layout[0],
     );
+    f.render_widget(
+        List::new(
+            app.messages
+                .iter()
+                .map(|i| ListItem::new(i.to_string()))
+                .collect_vec(),
+        ),
+        cues_messages_layout[1],
+    )
 }
